@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+{% load my-tags %}
+
+{% block navbar %}
+<div class="timer-container">
+    {% if showTimer %}
+    <div class="timer-text"><h1>${timerDisplay}</h1></div>
+    <div class="timer-bar" :style="{ width: bar + '%', backgroundColor: hue }"></div> 
+    {% endif %}
+</div>
+{% endblock %}
+{% block content %}
+    <div id="survey-app" class="survey-page">
+        <div class="modalContainer" v-if="modalOpen && slideCounter==0">
+            <div id="carousel" class="carousel">
+                <div class="item-1">
+                    <div class="columns">
+                        <div class="column is-1 modal-icon item-text">
+                            {% load static %}
+                            <img src="../../../../../static/icons/i-icon.png">
+                        </div>
+                        <div class="column is-11 item-text">
+                            <p>This AI model was validated and trained on the BreCaHad breast cancer dataset with its main tasks being cell detection and classification. The model distinguishes between tumor- and non tumor cells, which can be further split into mitosis, non mitosis, apoptosis, lumen and non lumen.</p>
+                        </div>
+                    </div>
+                </div>
+                {% if condition == 'Baseline' %}
+                <div class="item-2">
+                    <div class="columns">
+                        <div class="column is-12 item-text">
+                            <p>As part of this training session please estimate the tumor cell percentage, defined as the ratio of tumor cells to the total cell count, on the following two slides. Kindly note, that the second estimation will be conducted under a time constraint of 10 seconds. The actual study will be structured similarly to this training session, so feel free to take your time to get accustomed to the format and functionality of our application.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="item-3">
+                    <div class="close-icon">
+                        <a @click="modalOpen=false">
+                            {% load static %}
+                            <img src="../../../../../static/icons/close.png">
+                        </a>
+                    </div>
+                    <div class="columns">
+                        <div class="column is-4 car-img">
+                            {% load static %}
+                            <img class="test" src="../../../../../static/icons/zoom.png">
+                        </div>
+                        <div class="column is-8 item-text">
+                            <p>Please also take note of our zoom feature located in the top left corner: you can zoom in and out by pressing the plus and minus buttons, or reset the slide to its original state by clicking the refresh button. Additionally, by dragging the slide, you can move it around for better examination.</p>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="item-2">
+                    <div class="columns">
+                        <div class="column is-12 item-text">
+                            <p>As part of this training session please estimate the tumor cell percentage, defined as the ratio of tumor cells to the total cell count, on the following two slides. Kindly note, that the second estimation will be conducted under a time constraint of 10 seconds. The actual study will be structured similarly to this training session, so feel free to take your time to get accustomed to the format and functionality of our application.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="item-3">
+                    <div class="columns">
+                        <div class="column is-5 car-img">
+                            {% load static %}
+                            <img src="../../../../../static/icons/toggle.png">
+                        </div>
+                        <div class="column is-7 item-text">
+                            <p>By toggling the slider in the bottom left corner, you can visualize the AI cell detections. Tumor cells are indicated by an orange dot, while non-tumor cells are marked green. Below the slider, the ratio of detected tumor cells to total detected cells is displayed for analysis.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="item-4">
+                    <div class="close-icon">
+                        <a @click="modalOpen=false">
+                            {% load static %}
+                            <img src="../../../../../static/icons/close.png">
+                        </a>
+                    </div>
+                    <div class="columns">
+                        <div class="column is-4 car-img">
+                            {% load static %}
+                            <img class="test" src="../../../../../static/icons/zoom.png">
+                        </div>
+                        <div class="column is-8 item-text">
+                            <p>Please also take note of our zoom feature located in the top left corner: you can zoom in and out by pressing the plus and minus buttons, or reset the slide to its original state by clicking the refresh button. Additionally, by dragging the slide, you can move it around for better examination.</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="training-sign">
+            {% load static %}
+            <img src="../../../../../static/icons/training.png">
+            <h1>Training</h1> 
+        </div>
+        <div class="columns">
+            <div class="column is-8 image-container">
+                <div v-if="lockOn" class="image-lock">
+                    {% load static %}
+                    <img class="lock-icon" src="../../../../../static/icons/lock.png">
+                </div>
+                <div id="image-div" @mousedown="startDrag()" @mouseup="stopDrag()" @mousemove="whileDrag()">
+                    <div v-if="condition=='XAI'" class="field switch-container">
+                        <div>
+                            <div class="switch-toggle-container">
+                                <input id="annotations" name="annotations" class="switch is-rounded is-rtl" type="checkbox" v-model="annotationsOn" autocomplete="off">
+                                <label for="annotations">Detections</label>
+                            </div>
+                            <div>
+                                <p><b class="tumor-cell">{{tumorCells|dicIndex:slideCounter}}</b>/{{totalCells|dicIndex:slideCounter}}</p>
+                            </div> 
+                        </div>
+                    </div>
+                    <div class="zoom">
+                        <button id="plus" @click="zoomIn()">
+                            {% load static %}
+                            <img src="../../../../../static/icons/plus.png">
+                        </button>
+                        <button id="minus" @click="zoomOut()" disabled="true">
+                            {% load static %}
+                                <img src="../../../../../static/icons/minus.png">
+                        </button>
+                        <button @click="reset()">
+                            {% load static %}
+                                <img style="width:100%" src="../../../../../static/icons/reset.png">
+                        </button>
+                    </div>
+                    {% load static %}
+                    <img v-if="annotationsOn && condition=='XAI'" id="drag-img" :src="'../../../../../static/trainingAnnotations/' + slideCounter + '.png'" @load="loaded()">
+                    <img v-else id="drag-img" :src="'../../../../../static/trainingImages/' + slideCounter + '.png'" @load="loaded()">
+                </div>
+            </div>
+            <div class="column is-4 side-bar">
+                {% if condition == 'XAI' %}
+                <div class="column is-12 AI-rec">
+                    <div v-if="lockOn" class="AI-rec-lock"></div>
+                    <div class="AI-rec-titles">
+                        <h1>AI Recommendation</h1>
+                        <h2>The AI estimates a tumor cell percentage of:</h2>
+                        <h1 class="mb-5 percentage">{{predictions|dicIndex:slideCounter}}%</h1>
+                        <div class="columns">
+                            <div class="column is-11">
+                                <p>The depicted cells below, are excerpts from the currently displayed slide and serve as prototypical examples for a positive and negative tumor cell classification by the AI model:</p>
+                            </div>
+                            <div class="column is-1 icon">
+                                {% load static %}
+                                <img src="../../../../../static/icons/i-icon.png">
+                            </div>
+                        </div>
+                        <div class="columns pt-4">
+                            <div class="column is-6">
+                                <div class="row example pos-ex">
+                                    {% load static %}
+                                    <img src="{% static 'trainingPatches/' %}{{slideCounter}}0.png">
+                                </div>
+                                <div class="row example">
+                                    <p>Prototypical positive result from this slide</p>
+                                </div>
+                            </div>
+                            <div class="column is-6">
+                                <div class="row example neg-ex">
+                                    {% load static %}
+                                    <img src="{% static 'trainingPatches/' %}{{slideCounter}}1.png">
+                                </div>
+                                <div class="row example">
+                                    <p>Prototypical negative result from this slide</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="column is-12 your-assessment" :style="condition=='XAI'?{ 'height': '35%'}:{ 'height': '100%'}">
+                    <div>
+                        <h1 class="mb-4">Your Assessment</h1>
+                        <p v-if="condition == 'XAI'" class="mb-4">Please estimate the tumor cell percentage(%) knowing the AI predicted <b>{{predictions|dicIndex:slideCounter}}%</b>:</p>
+                        <p v-else class="mb-4">Please estimate the tumor cell percentage(%):</p>
+                        <form onsubmit="return false">
+                            <input v-model="tcpEst" autocomplete="off">
+                        </form>
+                    </div>
+                   
+                </div>
+            </div>
+        </div>
+        <footer class="footer is-dark">
+            <div class="slide-progress">
+                <h2 class="ml-4">Page ${slideCounter + 1} out of ${totalSlides}</h2>
+            </div>
+            <div class="next-button">
+                <button class="next" :disabled=!tcpEst @click=nextSlide()>Next</button>
+            </div>
+        </footer>
+    </div>
+{% endblock %}
+
+{% block script %}
+<script>
+    var surveyapp = new Vue({
+        el: '#experiment',
+        delimiters: ['${', '}'],
+        data () {
+            return {
+                totalSlides: 3,
+                timerActive: {{showTimer}},
+                slideCounter: {{slideCounter}},
+                condition: "{{condition}}",
+                tcpEst : "",
+                annotationsOn: false,
+                zoomLevel: 0,
+                posX: 0,
+                posY: 0,
+                dragOn: false,
+                lockOn: false,
+                seconds: 10, 
+                centiseconds: 0,
+                timerDisplay: "00:10",
+                bar : 100,
+                hue: "hsl(120,80%,85%)",
+                firstLoad: 0,
+                modalOpen: true,
+            }
+        },
+        watch: {
+            centiseconds: {
+                handler(value) {
+                    if (value > 0) {
+                        setTimeout(() => {
+                            this.centiseconds--;
+                            this.seconds =  Math.floor(this.centiseconds/100);
+                            if (this.centiseconds>=10) {
+                                this.timerDisplay = "00:0" + this.seconds + ","+ Math.floor(this.centiseconds/10);
+                            }
+                            else {
+                                this.timerDisplay = "00:0" + this.seconds + ",0"+ Math.floor(this.centiseconds/10);
+                            }
+                            this.bar = Math.floor(this.centiseconds/10)
+                            var hue=(((this.bar/100))*120).toString(10);
+                            this.hue = "hsl(" + hue + ",80%,85%)"; 
+                            if (this.centiseconds == 300 && this.timerActive==1) {
+                                this.lockOn = true;
+                            }
+                        }, 10);
+                    }
+                },
+                immediate: true // This ensures the watcher is triggered upon creation
+            },
+        },
+        methods: {
+            loaded() {
+                this.firstLoad++;
+                if (this.firstLoad == 1) {
+                this.centiseconds = 1000;
+                }
+            },
+            validateEntry() {
+                let temp = this.tcpEst;
+                temp = temp.replace(',','.');
+                temp = temp.replace('%','');
+                temp = temp.replace(' ','');
+                let value = parseFloat(temp) ;
+                if (value < 0 ||  value> 100) {
+                    alert("Please enter a whole number between 0 and 100");
+                    return false;
+                }
+                else if(isNaN(value)) {
+                    alert("Illegal string");
+                    return false;
+                }
+                else {
+                    this.tcpEst= "" + Math.round(value);
+                    return true;
+                }
+            },
+            nextSlide() {
+                if (this.validateEntry()) {
+                    if (this.slideCounter < this.totalSlides) {
+                        var newSlideCounter = this.slideCounter + 1;
+                        if (newSlideCounter == 1) {
+                            this.timerActive = 1 - this.timerActive;
+                        }
+                        var participantId='{{id}}';
+                        var url = '../../../../'+participantId+'/'+ this.condition+ '/' + this.timerActive+ '/'+ newSlideCounter+'/';
+                        const formdata = {
+                            'tcp_est' : this.tcpEst,
+                        };
+                        fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'apllication/json',
+                                'X-CSRFToken': '{{csrf_token}}'
+                            },
+                            body: JSON.stringify(formdata)
+                        })
+                        .then((response) => {
+                                window.location.href = response.url;
+                        })
+                        .catch(function(error) {
+                            console.log('Error');
+                        })
+                    }
+                }
+            },
+            zoomIn() {
+                var draggable = document.querySelector('#drag-img');
+                var draggableRect = draggable.getBoundingClientRect();
+                var parent = document.querySelector('#image-div');
+                var parentRect = parent.getBoundingClientRect();
+                const scale = 1.5;
+                if(this.zoomLevel < 3) {
+                    const newWidth = draggableRect.width * scale;
+                    const newHeight = draggableRect.height * scale;
+                    draggable.style.width = newWidth+ "px";
+                    draggable.style.height = newHeight + "px"
+                    //zoom from parent middel
+                    var oCX = (parent.offsetLeft + parentRect.width/2) - draggable.offsetLeft;
+                    var oCY = (parent.offsetTop + parentRect.height/2) - draggable.offsetTop;
+                    var newX = (parent.offsetLeft + parentRect.width/2)-(oCX*scale);
+                    var newY = (parent.offsetTop + parentRect.height/2)-(oCY*scale);
+                    draggable.style.left = newX + "px";
+                    draggable.style.top = newY + "px";
+                    this.zoomLevel++;
+                    if (this.zoomLevel == 3) {
+                        document.getElementById("plus").disabled = true;
+                    }
+                    else {
+                        document.getElementById("minus").disabled = false;
+                    }
+                }
+            },
+            zoomOut() {
+                var draggable = document.querySelector('#drag-img');
+                var draggableRect = draggable.getBoundingClientRect();
+                var parent = document.querySelector('#image-div');
+                var parentRect = parent.getBoundingClientRect();
+                const scale = 1.5;
+                if(this.zoomLevel > 0) {
+                    const newWidth = draggableRect.width/scale;
+                    const newHeight = draggableRect.height/scale;
+                    draggable.style.width = newWidth+ "px";
+                    draggable.style.height = newHeight + "px"
+                    //zoom from parent middel
+                    var oCX = (parent.offsetLeft + parentRect.width/2) - draggable.offsetLeft;
+                    var oCY = (parent.offsetTop + parentRect.height/2) - draggable.offsetTop;
+                    var newX = (parent.offsetLeft + parentRect.width/2) - (oCX/scale);
+                    var newY = (parent.offsetTop + parentRect.height/2) - (oCY/scale);
+                    draggable.style.left = newX + "px";
+                    draggable.style.top = newY + "px";
+                    this.zoomLevel--;
+                    if (this.zoomLevel == 0) {
+                        document.getElementById("minus").disabled = true;
+                    }
+                    else {
+                        document.getElementById("plus").disabled = false;
+                    }
+                }
+            },
+            reset() {
+                var draggable = document.querySelector('#drag-img');
+                var draggableRect = draggable.getBoundingClientRect();
+                this. zoomLevel = 0;
+                draggable.style.width = "100%";
+                draggable.style.height = "100%";
+                draggable.style.left = "0px";
+                draggable.style.top = "0px";
+                document.getElementById("plus").disabled = false;
+                document.getElementById("minus").disabled = true;
+            },
+            startDrag() {
+                this.dragOn = true;
+                document.getElementById("image-div").style.cursor = "move";
+                window.event.preventDefault();
+                var draggable = document.querySelector('#drag-img');
+                this.posX = window.event.clientX - draggable.offsetLeft;
+                this.posY = window.event.clientY - draggable.offsetTop;
+            },
+            stopDrag() {
+                this.dragOn = false;
+                this.originalX = 0;
+                this.originalY = 0;
+                document.getElementById("image-div").style.cursor = "default";
+            },
+            whileDrag() {
+                var parent = document.querySelector('#image-div');
+                var parentRect = parent.getBoundingClientRect();
+                var draggable = document.querySelector('#drag-img');
+                var mouseX = window.event.clientX;
+                var mouseY = window.event.clientY;
+                if (this.dragOn==true) {
+                    if( (mouseX >= (parentRect.left+10) && (mouseX <= (parentRect.right-10))) && (mouseY >= (parentRect.top+10) && (mouseY <= (parentRect.bottom-10))) ){
+                        var newX = window.event.clientX - this.posX;
+                        var newY = window.event.clientY - this.posY;
+                        draggable.style.left = (newX) + "px";
+                        draggable.style.top = (newY) + "px";
+                    }
+                    else {
+                        this.stopDrag();
+                    }
+                }
+            }
+        }
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bulma-carousel@4.0.3/dist/js/bulma-carousel.min.js"></script>
+<script>
+    bulmaCarousel.attach('#carousel', {
+		slidesToScroll: 1,
+		slidesToShow: 1,
+        icons: { previous: "{% load static %}<img src='../../../../../static/icons/left.png'>", next: "{% load static %}<img src='../../../../../static/icons/right.png'>"}
+	});
+</script>
+{% endblock %}

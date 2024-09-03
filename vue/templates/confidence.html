@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="content-section">
+    <div class="confidence-form-container">
+        <div>
+            <h2 class="mb-3" style="font-size:x-large">How confident are you in your assessment?</h2>
+            <form id="confidence" method="post" class="form-field" style="font-size:large">
+                <p>not at all confident</p>
+                {% csrf_token %}
+                {{form}}
+                <p>completely confident</p>
+            </form>
+        </div>
+    </div>
+    <footer class="footer is-dark">
+        <div class="next-button" style = "width:100%">
+            <button form="confidence" type="submit">Next</button>
+        </div>
+    </footer>
+</div>
+{% endblock %}

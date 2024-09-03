@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load my-tags %}
+{% block content %}
+<div id="poststudy" class="pre-study-section">
+    <div class="pre-study-container" :class="condition=='Baseline'?'justUEQ':''">
+        <div class="pre-study-form mt-5 pb-5">
+            <h1 style="font-size:x-large">User Experience Questionnaire</h1>
+            <form id="ueqs" method="post">
+                <div class="question-container">
+                    <div style ="width:100%">
+                        <h2 class="pb-5" style ="text-align: left">Please assess your experience using our application/interface by only ticking one circle per line.<b class="required">*</b></h2>
+                        <div>
+                            {% csrf_token %}
+                            {% for field in form %}
+                                <div class="columns">
+                                    <div class="column is-3 negative">
+                                        <p>{{negAttrib|index:forloop.counter0}}</p>
+                                    </div>
+                                    <div class="column is-6 radio-buttons form-field">
+                                        {{field}}
+                                    </div>
+                                    <div class="column is-3 positive">
+                                        <p>{{posAttrib|index:forloop.counter0}}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% if condition == 'XAI' %}
+                <div class="question-container">
+                    <div style ="width:100%">
+                        <h2 class="pb-5" style ="text-align: left">Please assess the artificial intelligence now.</h2>
+                        <div style ="width:100%; display: flex; justify-content: center;">
+                            <div style ="width:70%;">
+                                {% csrf_token %}
+                                {% for field2 in form2 %}
+                                    <div class="columns spacer">
+                                        <div class="column is-12 positive">
+                                            <p>{{field2.label}}<b class="required">*</b></p>
+                                        </div>
+                                    </div>
+                                    {% if forloop.counter0 < 4 %}
+                                    <div class="columns">
+                                        <div class="column is-2 negative">
+                                            <p>1 (not at all)</p>
+                                        </div>
+                                        <div class="column is-8 radio-buttons form-field">
+                                            {{field2}}
+                                        </div>
+                                        <div class="column is-2 positive">
+                                            <p>10 (completely)</p>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="columns">
+                                        <div class="column is-12 radio-buttons form-field">
+                                            {{field2}}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                                </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    <footer class="footer is-dark">
+        <div class="next-button" style = "width:100%">
+            <button form="ueqs" type="submit">Finish</button>
+        </div>
+    </footer>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    var surveyapp = new Vue({
+        el: '#poststudy',
+        delimiters: ['${', '}'],
+        data () {
+            return {
+                condition: '{{condition}}',
+            }
+        },
+    });
+</script>
+{% endblock %}

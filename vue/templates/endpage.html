@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="content-section">
+    <div class="start-form-container">
+        <div class="start-text">
+            <h1 style="font-size:x-large; text-align: center;">Thank you for your time and answers!</h1>
+            {% if condition == 'Baseline' %}
+            <p>Firstly, we would like to thank you for your valuable participation in our study. Now that you have successfully completed round 1 of the experiment, you will have a break of two weeks, after which we will contact you with the link for round 2. As a token of our appreciation for your contribution, we would like to assure you, that you will be among the first to receive a detailed report of the study findings. This report will provide a comprehensive overview of the results before they are published more widely. Additionally, you will receive a summary detailing how closely your TCP estimations align with the ground truth in comparison to other participants</p>
+            {% else %}
+            <p>Firstly, we would like to thank you for your valuable participation in our study. You have succesfully completed the experiment. As a token of our appreciation for your contribution, we would like to assure you, that you will be among the first to receive a detailed report of the study findings. This report will provide a comprehensive overview of the results before they are published more widely.</p>
+            {% endif %}
+        </div>
+    </div>
+    <footer class="footer is-dark">
+    </footer>
+</div>
+{% endblock %}

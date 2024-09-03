@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="content-section">
+    <div class="start-form-container">
+        <div class="start-text">
+            <h1 class="mt-2" style="font-size:x-large">Round 2 - Application of Artificial Intelligence in Digital Pathology</h1>
+            <p>Thank you for taking this 20 minute survey! The goal of this study is to gain insight into the use of artificial intelligence (AI) in digital pathology and shed light on human-machine cooperation in terms of efficiency, acceptance and usefulness. Additionally, we seek to examine the influence of AI and a high-stress setting on inter-observer variability. As part of this investigation, your assignment will involve the estimation of the tumor cell percentage based on the provided H&E stained slides. This study consists of two rounds, which will be held within a two week interval, and involves a total of 20 slides per run, with nine of them having to be rated under the constraint of a timer. In this <b>second round</b>, you will be assisted by an Explainable AI.</p>
+            <p>Even though this study is completely voluntary and not compensated monetarily, we would like to show our appreciation for your participation by sending you a summary of the study findings weeks before they will be published officially, so please be sure to enter your e-mail address, which you have already used in round 1, in the text field below.</p>
+            <form id="email" method="post">
+                {% csrf_token %}
+                <div class="form-field">
+                    <p class="mr-5">E-mail:<b class="required">*</b></p>
+                    {{form.email}}
+                </div>
+                {% if messages %}
+                    {% for message in messages %}
+                        <p class="required m-0 p-0 errorM"><b>{{ message }}</b> This e-mail was not registered in round 1. Please reuse the e-mail, that you have entered in round 1. If you haven't completed round 1 of the study yet, you can do so <a href="{% url 'startingpageBaseline' %}"><u>here</u></a>."</p>
+                    {% endfor %}
+                {% endif %}
+                <div class="form-field">
+                    {{form.terms}}
+                    <p class="terms ml-5">By checking the box, you agree that the data collected during the study may be utilized for research purposes and to it being published anonymously in a scientific paper. Your contribution will be treated confidentially, and your personal information will not be identifiable in the publication. Your participation is voluntary, and you can withdraw at any time without providing a reason. If you have any questions or concerns, you can reach the study coordinator via this e-mail: <a href="mailto:example@email.com">example@email.com</a>.<b class="required">*</b></p>
+                </div>
+            </form>
+        </div>
+    </div>
+    <footer class="footer is-dark">
+        <div class="next-button" style = "width:100%">
+            <button form="email" type="submit">Start training session</button>
+        </div>
+    </footer>
+</div>
+{% endblock %}

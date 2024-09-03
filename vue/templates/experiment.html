@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+{% block navbar %}
+    {% if showTimer %}
+    <div v-if="!warning" class="timer-container">
+        <div class="timer-text"><h1>${timerDisplay}</h1></div>
+        <div class="timer-bar" :style="{ width: bar + '%', backgroundColor: hue }"></div> 
+    </div>
+    {% endif %}
+{% endblock %}
+{% block content %}
+<div v-if="warning" id="survey-app" class="survey-page">
+    <div class="modalContainer">
+        <div class="modal">
+            {% load static %}
+            <img src="../../../../../static/icons/warning.png" style="width: 200px;">
+            <p class="mt-3 mb-3"><b>Attention: </b>Each of the next 10 slides must be assessed before its timer expires. The countdown will start once you press the "Go" button below.</p>
+            <button class="cancel" @click="closeModal()">Go!</button>
+        </div>
+    </div>
+</div>
+<div v-else id="survey-app" class="survey-page">
+    <div class="columns">
+        <div class="column is-8 image-container">
+            <div v-if="lockOn" class="image-lock">
+                {% load static %}
+                <img class="lock-icon" src="../../../../../static/icons/lock.png">
+            </div>
+            <div id="image-div" @mousedown="startDrag()" @mouseup="stopDrag()" @mousemove="whileDrag()">
+                <div v-if="condition=='XAI'" class="field switch-container">
+                    <div>
+                        <div class="switch-toggle-container">
+                            <input id="annotations" name="annotations" class="switch is-rounded is-rtl" type="checkbox" v-model="annotationsOn" autocomplete="off">
+                            <label for="annotations">Detections</label>
+                        </div>
+                        <div>
+                            <p><b class="tumor-cell">${slides[slideCounter].tumorCells}</b>/${slides[slideCounter].totalCells}</p>
+                        </div> 
+                    </div>
+                </div>
+                <div class="zoom">
+                    <button id="plus" @click="zoomIn()">
+                        {% load static %}
+                        <img src="../../../../../static/icons/plus.png">
+                    </button>
+                    <button id="minus" @click="zoomOut()" disabled="true">
+                        {% load static %}
+                            <img src="../../../../../static/icons/minus.png">
+                    </button>
+                    <button @click="reset()">
+                        {% load static %}
+                            <img style="width:100%" src="../../../../../static/icons/reset.png">
+                    </button>
+                </div>
+                {% load static %}
+                <img v-if="annotationsOn && condition=='XAI'" id="drag-img" :src=slides[slideCounter].urlAnnotations @load="loaded()">
+                <img v-else id="drag-img" :src=slides[slideCounter].url @load="loaded()">
+            </div>
+        </div>
+        <div class="column is-4 side-bar">
+            {% if condition == 'XAI' %}
+            <div class="column is-12 AI-rec">
+                <div v-if="lockOn" class="AI-rec-lock"></div>
+                <div class="AI-rec-titles">
+                    <h1>AI Recommendation</h1>
+                    <h2>The AI estimates a tumor cell percentage of:</h2>
+                    <h1 class="mb-5 percentage">${slides[slideCounter].pred}%</h1>
+                    <div class="columns">
+                        <div class="column is-11">
+                            <p>The depicted cells below, are excerpts from the currently displayed slide and serve as prototypical examples for a positive and negative tumor cell classification by the AI model:</p>
+                        </div>
+                        <div class="column is-1 icon">
+                            {% load static %}
+                            <img src="../../../../../static/icons/i-icon.png">
+                        </div>
+                    </div>
+                    <div class="columns pt-4">
+                        <div class="column is-6">
+                            <div class="row example pos-ex">
+                                <img :src=slides[slideCounter].urlPos>
+                            </div>
+                            <div class="row example">
+                                <p>Prototypical positive result from this slide</p>
+                            </div>
+                        </div>
+                        <div class="column is-6">
+                            <div class="row example neg-ex">
+                                <img :src=slides[slideCounter].urlNeg>
+                            </div>
+                            <div class="row example">
+                                <p>Prototypical negative result from this slide</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            <div class="column is-12 your-assessment" :style="condition=='XAI'?{ 'height': '35%'}:{ 'height': '100%'}">
+                <div>
+                    <h1 class="mb-4">Your Assessment</h1>
+                    <p v-if="condition == 'XAI'" class="mb-4">Please estimate the tumor cell percentage(%) knowing the AI predicted <b>${slides[slideCounter].pred}%</b>:</p>
+                    <p v-else class="mb-4">Please estimate the tumor cell percentage(%):</p>
+                    <form onsubmit="return false">
+                        <input v-model="tcpEst" autocomplete="off">
+                    </form>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    <footer class="footer is-dark">
+        <div class="slide-progress">
+            <h2 class="ml-4">Page ${slideCounter + 1} out of ${totalSlides}</h2>
+        </div>
+        <div class="next-button">
+            <button class="next" :disabled=!tcpEst @click=nextSlide()>Next</button>
+        </div>
+    </footer>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    var surveyapp = new Vue({
+        el: '#experiment',
+        delimiters: ['${', '}'],
+        data () {
+            return {
+                totalSlides: 20,
+                timerActive: {{showTimer}},
+                slideCounter: {{slideCounter}},
+                condition: "{{condition}}",
+                tcpEst : "",
+                annotationsOn: false,
+                zoomLevel: 0,
+                posX: 0,
+                posY: 0,
+                dragOn: false,
+                lockOn: false,
+                seconds: 10, 
+                centiseconds: 0,
+                timerDisplay: "00:10",
+                bar : 100,
+                hue: "hsl(120,80%,85%)",
+                firstLoad: 0,
+                warning: false,
+                group: "{{group}}",
+                startTime: new Date(),
+                slides: [
+                    {% for slide in slides %}
+                        {
+                            "number" : {{slide}},
+                            "url": "../../../../../static/images/" + {{ slide }} + ".png",
+                            "urlAnnotations": "../../../../../static/annotations/" + {{ slide }} + ".png",
+                            "urlPos": "../../../../../static/patches/" + {{ slide }} + "0.png",
+                            "urlNeg": "../../../../../static/patches/" + {{ slide }} + "1.png",
+                            {%for key, value in predictions.items %}
+                                {% if key == slide %}
+                                    "pred": {{value}},
+                                {% endif %}
+                            {% endfor %}
+                            {%for key, value in tumorCells.items %}
+                                {% if key == slide %}
+                                    "tumorCells": {{value}},
+                                {% endif %}
+                            {% endfor %}
+                            {%for key, value in totalCells.items %}
+                                {% if key == slide %}
+                                    "totalCells": {{value}},
+                                {% endif %}
+                            {% endfor %}
+                        },
+                    {% endfor %}
+                ],
+            }
+        },
+        created() {
+            if(((this.group == "A" || this.group == "B") && this.slideCounter == 0) || ((this.group == "C" || this.group == "D") && this.slideCounter == 10)) {
+                this.warning = true;
+            }
+        },
+        watch: {
+            centiseconds: {
+                handler(value) {
+                    if (value > 0) {
+                        setTimeout(() => {
+                            this.centiseconds--;
+                            this.seconds =  Math.floor(this.centiseconds/100);
+                            if (this.centiseconds>=10) {
+                                this.timerDisplay = "00:0" + this.seconds + ","+ Math.floor(this.centiseconds/10);
+                            }
+                            else {
+                                this.timerDisplay = "00:0" + this.seconds + ",0"+ Math.floor(this.centiseconds/10);
+                            }
+                            this.bar = Math.floor(this.centiseconds/10)
+                            var hue=(((this.bar/100))*120).toString(10);
+                            this.hue = "hsl(" + hue + ",80%,85%)"; 
+                            if (this.centiseconds == 300 && this.timerActive==1) {
+                                this.lockOn = true;
+                            }
+                        }, 10);
+                    }
+                },
+                immediate: true // This ensures the watcher is triggered upon creation
+            },
+        },
+        methods: {
+            loaded() {
+                this.firstLoad++;
+                if (this.firstLoad == 1) {
+                    this.centiseconds = 1000;
+                }
+            },
+            closeModal() {
+                this.warning = false;
+            },
+            validateEntry() {
+                let temp = this.tcpEst;
+                temp = temp.replace(',','.');
+                temp = temp.replace('%','');
+                temp = temp.replace(' ','');
+                let value = parseFloat(temp) ;
+                if (value < 0 ||  value> 100) {
+                    alert("Please enter a whole number between 0 and 100");
+                    return false;
+                }
+                else if(isNaN(value)) {
+                    alert("Illegal string");
+                    return false;
+                }
+                else {
+                    this.tcpEst= "" + Math.round(value);
+                    return true;
+                }
+            },
+            nextSlide() {
+                if (this.validateEntry()) {
+                    if (this.slideCounter < this.totalSlides) {
+                        var newSlideCounter = this.slideCounter + 1;
+                        if (newSlideCounter== (this.totalSlides/2)) {
+                            this.timerActive = 1 - this.timerActive;
+                        }
+                        var participantId='{{id}}';
+                        var url = '../../../../'+participantId+'/'+ this.condition+ '/' + this.timerActive+ '/'+ newSlideCounter+'/';
+                        const currentTime = new Date();
+                        var timeDiff = currentTime.getTime() - this.startTime.getTime();
+                        var diffSecs = Math.floor(timeDiff/1000);
+                        var diffMins = Math.floor((timeDiff/1000)/60);
+                        var taskTime = null;
+                        if (diffMins<10) {
+                            if (diffSecs<10) {
+                                taskTime = "0"+diffMins + ":0" + diffSecs;
+                            }
+                            else {
+                                taskTime = "0"+diffMins + ":" + diffSecs;
+                            }
+                        }
+                        else {
+                            if (diffSecs<10) {
+                                taskTime = diffMins + ":0" + diffSecs;
+                            }
+                            else {
+                                taskTime = diffMins + ":" + diffSecs;
+                            }
+                        }
+                        const formdata = {
+                            'tcp_est' : this.tcpEst,
+                            'task_time' : taskTime,
+                        };
+                        fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'apllication/json',
+                                'X-CSRFToken': '{{csrf_token}}'
+                            },
+                            body: JSON.stringify(formdata)
+                        })
+                        .then((response) => {
+                                window.location.href = response.url;
+                        })
+                        .catch(function(error) {
+                            console.log('Error');
+                        })
+                    }
+                }
+            },
+            zoomIn() {
+                var draggable = document.querySelector('#drag-img');
+                var draggableRect = draggable.getBoundingClientRect();
+                var parent = document.querySelector('#image-div');
+                var parentRect = parent.getBoundingClientRect();
+                const scale = 1.5;
+                if(this.zoomLevel < 3) {
+                    const newWidth = draggableRect.width * scale;
+                    const newHeight = draggableRect.height * scale;
+                    draggable.style.width = newWidth+ "px";
+                    draggable.style.height = newHeight + "px"
+                    //zoom from parent middel
+                    var oCX = (parent.offsetLeft + parentRect.width/2) - draggable.offsetLeft;
+                    var oCY = (parent.offsetTop + parentRect.height/2) - draggable.offsetTop;
+                    var newX = (parent.offsetLeft + parentRect.width/2)-(oCX*scale);
+                    var newY = (parent.offsetTop + parentRect.height/2)-(oCY*scale);
+                    draggable.style.left = newX + "px";
+                    draggable.style.top = newY + "px";
+                    this.zoomLevel++;
+                    if (this.zoomLevel == 3) {
+                        document.getElementById("plus").disabled = true;
+                    }
+                    else {
+                        document.getElementById("minus").disabled = false;
+                    }
+                }
+            },
+            zoomOut() {
+                var draggable = document.querySelector('#drag-img');
+                var draggableRect = draggable.getBoundingClientRect();
+                var parent = document.querySelector('#image-div');
+                var parentRect = parent.getBoundingClientRect();
+                const scale = 1.5;
+                if(this.zoomLevel > 0) {
+                    const newWidth = draggableRect.width/scale;
+                    const newHeight = draggableRect.height/scale;
+                    draggable.style.width = newWidth+ "px";
+                    draggable.style.height = newHeight + "px"
+                    //zoom from parent middel
+                    var oCX = (parent.offsetLeft + parentRect.width/2) - draggable.offsetLeft;
+                    var oCY = (parent.offsetTop + parentRect.height/2) - draggable.offsetTop;
+                    var newX = (parent.offsetLeft + parentRect.width/2) - (oCX/scale);
+                    var newY = (parent.offsetTop + parentRect.height/2) - (oCY/scale);
+                    draggable.style.left = newX + "px";
+                    draggable.style.top = newY + "px";
+                    this.zoomLevel--;
+                    if (this.zoomLevel == 0) {
+                        document.getElementById("minus").disabled = true;
+                    }
+                    else {
+                        document.getElementById("plus").disabled = false;
+                    }
+                }
+            },
+            reset() {
+                var draggable = document.querySelector('#drag-img');
+                var draggableRect = draggable.getBoundingClientRect();
+                this. zoomLevel = 0;
+                draggable.style.width = "100%";
+                draggable.style.height = "100%";
+                draggable.style.left = "0px";
+                draggable.style.top = "0px";
+                document.getElementById("plus").disabled = false;
+                document.getElementById("minus").disabled = true;
+            },
+            startDrag() {
+                this.dragOn = true;
+                document.getElementById("image-div").style.cursor = "move";
+                window.event.preventDefault();
+                var draggable = document.querySelector('#drag-img');
+                this.posX = window.event.clientX - draggable.offsetLeft;
+                this.posY = window.event.clientY - draggable.offsetTop;
+            },
+            stopDrag() {
+                this.dragOn = false;
+                this.originalX = 0;
+                this.originalY = 0;
+                document.getElementById("image-div").style.cursor = "default";
+            },
+            whileDrag() {
+                var parent = document.querySelector('#image-div');
+                var parentRect = parent.getBoundingClientRect();
+                var draggable = document.querySelector('#drag-img');
+                var mouseX = window.event.clientX;
+                var mouseY = window.event.clientY;
+                if (this.dragOn==true) {
+                    if( (mouseX >= (parentRect.left+10) && (mouseX <= (parentRect.right-10))) && (mouseY >= (parentRect.top+10) && (mouseY <= (parentRect.bottom-10))) ){
+                        var newX = window.event.clientX - this.posX;
+                        var newY = window.event.clientY - this.posY;
+                        draggable.style.left = (newX) + "px";
+                        draggable.style.top = (newY) + "px";
+                    }
+                    else {
+                        this.stopDrag();
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

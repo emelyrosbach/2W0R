@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div id="start" class="content-section">
+    <div class="modalContainer" v-if="modalOpen">
+        <div class="modal">
+            <p> You’ve already completed <b v-if="condition=='XAI'">round 2 </b><b v-else>round 1 </b> of the study. If you start the experiment now, your previous entries will be lost. Do you still want to continue?</p>
+            <div class="columns">
+                <div class="column is-6">
+                    <button class="cancel" @click=continueAnyway(false)>Cancel</button>
+                </div>
+                <div class="column is-6">
+                    <button class="continue" @click=continueAnyway(true)>Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="start-form-container">
+        <div class="start-text" style="text-align: center">
+            <h1 style="font-size:x-large">Start the Experiment</h1>
+            <p>You’ve successfully completed the training. To start the experiment please answer the question below and press the start button.</p>
+            <p class="pt-5"><b>How shall the tumor cell percentage be calculated for this experiment?</b></p>
+            <div>
+                <input type="radio" id="one" value="One" v-model="answer" autocomplete="off"/>
+                <label class="mr-4" for="one">tumor cells/ total epithelial cell count</label>
+                <input type="radio" id="two" value="Two" v-model="answer" autocomplete="off"/>
+                <label class="mr-4" for="two">tumor cells/ total cell count</label>
+                <input type="radio" id="three" value="Three" v-model="answer" autocomplete="off"/>
+                <label class="mr-4" for="three">tumor proportion/ image area</label>
+            </div>
+            <button id="startButton" type="submit" @click=startExperiment() style = "width:200px; height:50px">Start</button>
+        </div>
+    </div>
+    <footer class="footer is-dark">
+    </footer>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    var surveyapp = new Vue({
+        el: '#start',
+        delimiters: ['${', '}'],
+        data () {
+            return {
+                modalOpen: false,
+                status: '{{status}}',
+                condition: '{{condition}}',
+                answer: null
+            }
+        },
+        methods: {
+            submit() {
+                var url = './';
+                fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'apllication/json',
+                            'X-CSRFToken': '{{csrf_token}}'
+                        }
+                    })
+                    .then((response) => {
+                            window.location.href = response.url;
+                    })
+                    .catch(function(error) {
+                        console.log('Error');
+                    })
+            },
+            startExperiment() {
+                if(this.answer == 'Two') {
+                    if (this.status == 'completed') {
+                        this.modalOpen = true;
+                    }
+                    else {
+                        this.submit();
+                    }
+                }
+                else {
+                    alert("Your answer was false. For this experiment the TCP is defined as the ratio of tumor cells to the total cell count. Please tick the correct answer and press the start button to commence with experiment.");
+                }
+            },
+            continueAnyway(boolVal) {
+                var url;
+                if (boolVal) {
+                    this.submit();
+                }
+                else {
+                    url ='../../../end/' + this.condition;
+                    fetch(url)
+                    .then((response) => {
+                            window.location.href = response.url;
+                    })
+                    .catch(function(error) {
+                        console.log('Error');
+                    })
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
