@@ -4,7 +4,7 @@
 
 This repository provides the software source code and materials used in *When Two Wrongs Don't Make a Right: Confirmation Bias under Time Pressure in AI-Assisted Medical Decision-Making]{"When Two Wrongs Don't Make a Right" - Examining Confirmation Bias and the Role of Time Pressure During Human-AI Collaboration in Computational Pathology*. We quantified confirmation bias triggered by AI-induced false confirmation and examined the role of time constraints in a web-based experiment, where trained pathology experts (n=28) estimated tumor cell percentages.
 For a visual overview of our study setup, please refer to the teaser image below:
-<img src="paperFigures/teaser.pdf" width="800px" align="center"/>
+<img src="paperFigures/teaser.png" width="800px" align="center"/>
 
 
 ## Contents
