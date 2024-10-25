@@ -10,7 +10,7 @@ For a visual overview of our study setup, please refer to the teaser image below
 ## Contents
 
 - **ExperimentApplication:** The `ExperimentApplication/` directory contains the Django project source code for the experiment interface where participants rated tumor cell percentages. The `static/` subdirectory houses the study materials, including image patches from different H&E stained tissue slides (licensed under Creative Commons) and a table with additional information on these study images.
-- **DataAnalysis** The `DataAnalysis/` directory contains the R source code (`ConfirmationBias-LMMs/` subdirectory) utilized to analyze the presence of confirmation bias during medical decision-making via linear mixed-effects models. An Excel file with the anonymized experiment data is also provided. Additionally, Jupyter notebooks, emplyed to assess the normality of the aforementioned study data and and generate the descriptive statistics and plots presented in the paper, are also included.
+- **DataAnalysis** The `DataAnalysis/` directory contains the R source code (`ConfirmationBias-LMMs/` subdirectory) utilized to analyze the presence of confirmation bias during medical decision-making via linear mixed-effects models. An Excel file with the anonymized experiment data is also provided. Additionally, Jupyter notebooks, employed to assess the normality of the aforementioned study data and and generate the descriptive statistics and plots presented in the paper, are also included.
 - containing code to asses the normal distribution of the experiment data, generate the descritpive statistcs and plots reported in the paper.
   
 ## Running the online experiment interface
