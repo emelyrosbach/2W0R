@@ -31,4 +31,4 @@ python manage.py runserver
 
 ## License
 
-The images located in the ```ExperimentApplication/static``` directory were obtained with the necessary rights and modified (e.g., visualization of cell detections) to meet our specific requirements. As a result, we are able to publish these images for public use under the Creative Commons 4.0 BY-NC-SA License.
+The images located in the ```ExperimentApplication/static``` directory were obtained with the necessary rights and modified (e.g., visualization of cell detections) to meet our specific requirements. As a result, we are able to publish these images for public use under the Creative Commons 4.0 BY-NC-SA License. Furthermore, paper figures and the study user interface were designed using resources from Flaticon.com.
